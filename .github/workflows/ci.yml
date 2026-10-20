@@ -32,6 +32,27 @@ jobs:
         working-directory: rustima
         run: cargo test --all-targets
 
+      - name: Read minimum supported Rust version
+        id: msrv
+        working-directory: rustima
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import tomllib
+
+          with open("Cargo.toml", "rb") as manifest:
+              version = tomllib.load(manifest)["package"]["rust-version"]
+          print(f"version={version}")
+          PY
+
+      - name: Install minimum supported Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+
+      - name: Run Rust tests with MSRV
+        working-directory: rustima
+        run: cargo +${{ steps.msrv.outputs.version }} test --locked --all-targets
+
   python-test:
     name: Python Tests (Tier A + Contract + Smoke)
     runs-on: ubuntu-latest
